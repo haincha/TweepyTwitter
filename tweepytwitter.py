@@ -21,7 +21,7 @@ c.execute("SELECT secret FROM keys")
 secret = c.fetchone()
 conn.close
 force = False
-if(key is not None):
+if(key != None):
 	auth.set_access_token(key[0], secret[0])
 	api = API(auth)
 else:
@@ -30,15 +30,15 @@ else:
 class Twitter(QDialog):
 	def __init__(self, parent=None):
 		super(Twitter, self).__init__(parent)
-		self.createSignin()
-		self.createTimeline()
 		if(force == True):
+			self.createSignin()
 			# Create widgets
 			self.mainLayout = QVBoxLayout()
 			self.mainLayout.addWidget(self.signin)
 			self.setLayout(self.mainLayout)
 
 		else:
+			self.createTimeline()
 			# Create widgets
 			self.mainLayout = QVBoxLayout()
 			self.mainLayout.addWidget(self.timeline)
@@ -98,10 +98,20 @@ class Twitter(QDialog):
 		if(force == True):
 			pin = self.edit.text()
 			token = auth.get_access_token(verifier=pin)
+			auth.set_access_token(token.key, token.secret)
+			global api
+			api = API(auth)
 			insertinfo = [(token.key, token.secret)]
 			c.executemany("INSERT INTO keys VALUES (?,?)", insertinfo)
 			conn.commit()
 			conn.close
+			while(api.verify_credentials() == False):
+				#waiting
+				nothing = 0
+			self.signin.setParent(None)
+			self.createTimeline()
+			self.mainLayout.addWidget(self.timeline)
+			self.setLayout(self.mainLayout)
 	def newtweet(self):
 		post = self.tweettext.text()
 		api.update_status(post)
